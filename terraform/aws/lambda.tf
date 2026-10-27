@@ -6,7 +6,7 @@ data "aws_region" "current" {}
 // Bucket names are global, so the account ID keeps it unique.
 resource "aws_s3_bucket" "landing" {
   bucket        = "p3-dr-landing-${data.aws_caller_identity.current.account_id}"
-  force_destroy = true   // lets terraform destroy delete the bucket even with files inside
+  force_destroy = true // lets terraform destroy delete the bucket even with files inside
 }
 
 // New buckets are private by default; this makes it explicit and permanent.
@@ -21,7 +21,7 @@ resource "aws_s3_bucket_public_access_block" "landing" {
 // ---------- Dead-letter queue: where failed events end up ----------
 resource "aws_sqs_queue" "dlq" {
   name                      = "p3-sync-dlq"
-  message_retention_seconds = 1209600   // 14 days (the maximum), time to inspect and replay
+  message_retention_seconds = 1209600 // 14 days (the maximum), time to inspect and replay
 }
 
 // ---------- Lambda security group ----------
@@ -91,9 +91,9 @@ resource "aws_iam_role_policy" "lambda_sync" {
 
 // ---------- Package: zip the code folder ----------
 data "archive_file" "lambda" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda/package" //path.module = the folder of this .tf file (terraform/aws) is one level up so no (terraform/aws/lambda), 
-                                                // so the paths work no matter which directory terraform is run from.
+  type       = "zip"
+  source_dir = "${path.module}/lambda/package" //path.module = the folder of this .tf file (terraform/aws) is one level up so no (terraform/aws/lambda), 
+  // so the paths work no matter which directory terraform is run from.
   output_path = "${path.module}/lambda/sync.zip"
 }
 
@@ -102,11 +102,11 @@ resource "aws_lambda_function" "sync" {
   function_name = "p3-sync"
   role          = aws_iam_role.lambda.arn
   runtime       = "python3.12"
-  handler       = "handler.handler"   // file handler.py, function handler()
-  timeout       = 30                  // default is 3s, too short for the secret fetch + DB connect
+  handler       = "handler.handler" // file handler.py, function handler()
+  timeout       = 30                // default is 3s, too short for the secret fetch + DB connect
 
   filename         = data.archive_file.lambda.output_path
-  source_code_hash = data.archive_file.lambda.output_base64sha256   // redeploys when the code changes
+  source_code_hash = data.archive_file.lambda.output_base64sha256 // redeploys when the code changes
 
   // In the private subnets so it can reach private RDS. The Lambda SG is what RDS allows in.
   vpc_config {
@@ -144,7 +144,7 @@ resource "aws_lambda_permission" "s3" {
   function_name  = aws_lambda_function.sync.function_name
   principal      = "s3.amazonaws.com"
   source_arn     = aws_s3_bucket.landing.arn
-  source_account = data.aws_caller_identity.current.account_id   // only our account's bucket
+  source_account = data.aws_caller_identity.current.account_id // only our account's bucket
 }
 
 // "A new .csv under incoming/ was uploaded, invoke the function."
@@ -158,7 +158,7 @@ resource "aws_s3_bucket_notification" "landing" {
     filter_suffix       = ".csv"
   }
 
-  depends_on = [aws_lambda_permission.s3]   // the permission must exist before the notification
+  depends_on = [aws_lambda_permission.s3] // the permission must exist before the notification
 }
 
 // ---------- S3 gateway endpoint ----------

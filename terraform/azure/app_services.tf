@@ -12,7 +12,7 @@ resource "azurerm_linux_web_app" "web" {
   resource_group_name = azurerm_resource_group.main.name
   service_plan_id     = azurerm_service_plan.main.id
   https_only          = false # Previously set to TRUE ... Redirects HTTP to HTTPS so traffic is always encrypted. Default is FALSE
-                              # Front Door reaches this origin over HTTP (the AWS ALB has no certificate), so the redirect to HTTPS would break its health probe. Default is FALSE
+  # Front Door reaches this origin over HTTP (the AWS ALB has no certificate), so the redirect to HTTPS would break its health probe. Default is FALSE
 
   identity {
     type = "SystemAssigned"

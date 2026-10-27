@@ -47,7 +47,7 @@ resource "aws_ecs_task_definition" "app" {
       { name = "DB_HOST", value = aws_db_instance.main.address },
       { name = "DB_NAME", value = "appdb" },
       { name = "DB_USER", value = "dbadmin" },
-     // Python fetches the password itself with boto3 using this ARN, so it never appears in the task definition.
+      // Python fetches the password itself with boto3 using this ARN, so it never appears in the task definition.
       { name = "DB_SECRET_ID", value = aws_secretsmanager_secret.db.arn },
       { name = "AWS_REGION", value = data.aws_region.current.name },
     ]

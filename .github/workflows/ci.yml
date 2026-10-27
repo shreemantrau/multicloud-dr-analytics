@@ -1,0 +1,51 @@
+name: ci
+
+# Runs on every pull request and every push to main that touches Terraform code.
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: [aws, azure, gcp]
+    defaults:
+      run:
+        working-directory: terraform/${{ matrix.cloud }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+
+      # Formatting check: fails if any file is not terraform fmt clean.
+      - run: terraform fmt -check -recursive
+
+      # -backend=false: no cloud login needed, so this job needs no credentials.
+      - run: terraform init -backend=false
+      - run: terraform validate
+
+  checkov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Security scan of the Terraform code.
+      # soft_fail: findings are reported but do not fail the run; intentional
+      # tradeoffs (public ALB, HTTP origin, ...) are documented in the README.
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true
