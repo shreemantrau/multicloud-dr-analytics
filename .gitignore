@@ -1,0 +1,21 @@
+# Terraform: state and provider downloads (state holds passwords)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+# Build output
+terraform/aws/lambda/package/
+*.zip
+__pycache__/
+*.pyc
+
+# Test files from the Lambda sync
+test.csv
+bad.csv
+
+# OS and editor
+.DS_Store
+.vscode/
+.idea/

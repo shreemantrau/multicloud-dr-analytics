@@ -1,0 +1,4 @@
+flask
+pymssql
+azure-identity
+azure-keyvault-secrets
