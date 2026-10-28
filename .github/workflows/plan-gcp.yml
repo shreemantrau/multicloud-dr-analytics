@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "terraform/gcp/**"
+      - ".github/workflows/plan-gcp.yml"
 
 # why: GitHub needs id-token to issue the JWT that GCP verifies
 permissions:
