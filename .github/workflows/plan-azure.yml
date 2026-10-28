@@ -1,0 +1,48 @@
+name: plan-azure
+
+# Terraform plan for Azure on every pull request that touches the Azure code.
+on:
+  pull_request:
+    paths:
+      - "terraform/azure/**"
+      - ".github/workflows/plan-azure.yml"
+
+# id-token: write lets the job request GitHub's signed token (OIDC); no stored cloud keys.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  # Terraform's azurerm provider reads these. The IDs live in repository variables.
+  ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  # TF_VAR_<name> is picked up by Terraform as the input variable <name>.
+  TF_VAR_sql_password: ${{ secrets.TF_VAR_sql_password }}
+  # frontdoor.tf needs two origin hostnames; a plan only needs placeholder values.
+  TF_VAR_azure_origin_host: app-project3-web.azurewebsites.net
+  TF_VAR_aws_origin_host: alb.example.com
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/azure
+    steps:
+      - uses: actions/checkout@v4
+
+      # Swap GitHub's token for an Azure login as the service principal.
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -no-color -lock-timeout=60s | tee plan.txt
+
+      # Show the end of the plan on the run's summary page.
+      - if: success()
+        run: |
+          { echo '```'; tail -n 40 plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
