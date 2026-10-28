@@ -1,0 +1,47 @@
+name: plan-aws
+
+# Terraform plan for AWS on every pull request that touches the AWS code.
+on:
+  pull_request:
+    paths:
+      - "terraform/aws/**"
+      - ".github/workflows/plan-aws.yml"
+
+# id-token: write lets the job request GitHub's signed token (OIDC); no stored cloud keys.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/aws
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Lambda package folder is not in git (it is build output), so build it
+      # here; the archive_file data source zips it during plan.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          pip install -r lambda/requirements.txt -t lambda/package --quiet
+          cp lambda/handler.py lambda/package/
+
+      # Swap GitHub's token for temporary AWS credentials. The role ARN lives in a
+      # repository variable so the account ID is not hard-coded in this public file.
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: us-west-2
+
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -no-color -lock-timeout=60s | tee plan.txt
+
+      # Show the end of the plan on the run's summary page.
+      - if: always()
+        run: |
+          { echo '```'; tail -n 40 plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
