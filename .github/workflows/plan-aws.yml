@@ -24,6 +24,10 @@ jobs:
       # The Lambda package folder is not in git (it is build output), so build it
       # here; the archive_file data source zips it during plan.
       - uses: actions/setup-python@v5
+      - name: Show OIDC claims (debug, remove later)
+        run: |
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
+          python3 -c "import sys,json,base64; p=sys.argv[1].split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p)); print({k:c[k] for k in ('sub','aud','iss')})" "$TOKEN"
         with:
           python-version: "3.12"
       - run: |
